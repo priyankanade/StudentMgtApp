@@ -1,0 +1,212 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+    <style type="text/css">
+        body {
+            font-family: Arial;
+            font-size: 10pt;
+        }
+
+        .table {
+            border: 1px solid #ccc;
+            border-collapse: collapse;
+        }
+
+            .table th {
+                background-color: #F7F7F7;
+                color: #333;
+                font-weight: bold;
+            }
+
+            .table th, .table td {
+                padding: 5px;
+                border: 1px solid #ccc;
+            }
+    </style>
+</head>
+<body>
+    <div ng-app="HomeApp" ng-controller="StudentController">
+        <h1><font color="red">Student  Details</font></h1>
+        <table id="Student" class="table" cellpadding="0" cellspacing="0">
+            <tr>
+                <th style="width:100px">RollNo</th>
+                <th style="width:150px">Name</th>
+                <th style="width:150px">Age</th>
+                <th style="width:150px">City</th>
+                <th style="width:150px">Course</th>
+                <th style="width:100px"></th>
+            </tr>
+            <tbody ng-repeat="data in StudentTable">
+                <tr>
+                    <td>
+                        <span ng-hide="">{{data.RollNo}}</span>
+                    </td>
+                   
+                    <td>
+                        <span ng-hide="data.EditMode">{{data.Name}}</span>
+                        <input type="text" ng-model="data.Name" ng-show="data.EditMode" />
+                    </td>
+                    <td>
+                        <span ng-hide="data.EditMode">{{data.City}}</span>
+                        <input type="text" ng-model="data.City" ng-show="data.EditMode" />
+                    </td>
+                    <td>
+                        <span ng-hide="data.EditMode">{{data.Course}}</span>
+                        <input type="text" ng-model="data.Course" ng-show="data.EditMode" />
+                    </td>
+                    <td>
+                        <a class="Edit" href="javascript:;" ng-hide="data.EditMode" ng-click="Edit($index)">Edit</a>
+                        <a class="Update" href="javascript:;" ng-show="data.EditMode" ng-click="Update($index)">Update</a>
+                        <a class="Cancel" href="javascript:;" ng-show="data.EditMode" ng-click="Cancel($index)">Cancel</a>
+                        <a href="javascript:;" ng-hide="data.EditMode" ng-click="Delete(data.RollNo)">Delete</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <h3><font color="green">Add Data</font></h3>
+        <table border="0" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="width: 150px">
+                    RollNo<br />
+                    <input type="text" ng-model="RollNo" style="width:140px" />
+                </td>
+                <td style="width: 150px">
+                    Name<br />
+                    <input type="text" ng-model="Name" style="width:140px" />
+                </td>
+                <td style="width: 150px">
+                    Age<br />
+                    <input type="text" ng-model="Age" style="width:140px" />
+                </td>
+                <td style="width: 150px">
+                    City<br />
+                    <input type="text" ng-model="City" style="width:140px" />
+                </td>
+                <td style="width: 150px">
+                    Course<br />
+                    <input type="text" ng-model="Course" style="width:140px" />
+                </td>
+                <td style="width: 200px">
+                    <br />
+                    <input type="button" value="Add" ng-click="Add()" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.9/angular.min.js"></script>
+    <script type="text/javascript" src="http://ajax.cdnjs.com/ajax/libs/json2/20110223/json2.js"></script>
+    <script type="text/javascript">
+        var app = angular.module('HomeApp', [])
+        app.controller('StudentController', function ($scope, $http, $window) {
+            ////Getting records from database.
+            var post = $http({
+                method: "GET",
+                url: "api/Student/getStudent",
+                dataType: "json",
+                headers: { "Content-Type": "application/json" }
+            });
+            post.success(function (data, status) {
+                ////The received response is saved in Customers array.
+                $scope.Student = data;
+            });
+
+            ////Adding new record to database.
+            $scope.Add = function () {
+                if (typeof ($scope.RollNo) == "undefined" || typeof ($scope.Name) == "undefined" || typeof ($scope.Age) == "undefined"
+                    || typeof ($scope.City) == "undefined" || typeof ($scope.Course) == "undefined") {
+                    return;
+                }
+                var post = $http({
+                    method: "POST",
+                    url: "api/Student/create",
+                    data: "{ Id: '" + $scope.RollNo + "', Name: '" + $scope.Name + "', Age: '" + $scope.Age + "', City: '" + $scope.City + "', Course: '" + $scope.Course + "'}",
+                    dataType: 'json',
+                    headers: { "Content-Type": "application/json" }
+                });
+                post.success(function (data, status) {
+                    ////The newly inserted record is inserted into the Customers array.
+                    $scope.Student.push(data)
+                });
+                $scope.RollNo = "";
+                $scope.Name = "";
+                $scope.Age= "";
+                $scope.City = "";
+                $scope.Course = "";
+            };
+
+            ////This variable is used to store the original values.
+            $scope.EditItem = {};
+
+            ////Editing an existing record.
+            $scope.Edit = function (index) {
+                ////Setting EditMode to TRUE makes the TextBoxes visible for the row.
+                $scope.Student[index].EditMode = true;
+
+                ////The original values are saved in the variable to handle Cancel case.
+                $scope.EditItem.Name = $scope.Student[index].Name;
+                $scope.EditItem.Age = $scope.Student[index].Age;
+                $scope.EditItem.City= $scope.Student[index].City;
+                $scope.EditItem.Course = $scope.Course[index].Course;
+            };
+
+            ////Cancelling an Edit.
+            $scope.Cancel = function (index) {
+                //// The original values are restored back into the Customers Array.
+                $scope.Student[index].Name = $scope.EditItem.Name;
+                $scope.Student[index].Age= $scope.EditItem.Age;
+                $scope.Student[index].City = $scope.EditItem.City;
+                $scope.Student[index].course = $scope.EditItem.Course;
+                ////Setting EditMode to FALSE hides the TextBoxes for the row.
+                $scope.Student[index].EditMode = false;
+                $scope.EditItem ={};
+            };
+
+            ////Updating an existing record to database.
+            $scope.Update = function (index) {
+                var customer = $scope.Student[index];
+                var post = $http({
+                    method: "PUT",
+                    url: "api/Student/update",
+                    data: JSON.stringify(customer),
+                    dataType: 'json',
+                    headers: { "Content-Type": "application/json" }
+                });
+                post.success(function (data, status) {
+                    ////Setting EditMode to FALSE hides the TextBoxes for the row.
+                    customer.EditMode = false;
+                });
+            };
+
+            ////Deleting an existing record from database.
+            $scope.Delete = function (RollNo) {
+                if ($window.confirm("Do you want to delete this row?")) {
+                    var Student = {};
+                    Student.RollNo = RollNo;
+       
+                    RollNo = JSON.stringify(RollNo); 
+                   
+                    var post = $http({
+                        method: "DELETE",
+                        url: "/api/Student/delete/" +RollNo1,
+                        dataType: 'json',
+                        headers: { "Content-Type": "application/json" }
+                    });
+                    post.success(function (data, status) {
+                        alert("success");
+                        ////Remove the Deleted record from the Customers Array.
+                        $scope.Student = $scope.Student.filter(function (student) {
+                            return Student.RollNo !== student.RollNo;
+                        });
+                    });
+                    post.error(function (data, status) {
+                        alert(data);
+                        $window.alert(data.Message);
+                    });
+                }
+            };
+        });
+    </script>
+</body>
+</html>
